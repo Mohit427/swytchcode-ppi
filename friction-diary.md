@@ -352,16 +352,6 @@ The API had already returned its results. Fix: use `swy exec ... --raw`, which r
 
 ---
 
-## Friction #13
-
-**Step attempting:**
-**Command / action:**
-**Expected:**
-**Actual:**
-**What I tried next:**
-**Resolved?**
-
----
 
 ## AI usage log
 
@@ -375,15 +365,12 @@ The API had already returned its results. Fix: use `swy exec ... --raw`, which r
 | Claude Code (Opus 5.5) | Pasted my terminal output from `swy whoami`, `swy doctor` and `swy init` | Yes. It spotted that init ran in my home folder and identified which files were safe to remove |
 | Claude Code (Opus 5.5) | Pasted my terminal output from the second `swy init`, `swy doctor`, `Get-ChildItem -Force` and `claude mcp list` | Yes. It confirmed the project and MCP connection were correct and checked that the cleanup had worked |
 | Claude Code (Opus 5.5) | Pasted my `.swytchcode` file listing after `swy get github` | Yes. It found the Wrekenfile, mapped its structure, and found the correct method ID, the required inputs and the empty sandbox endpoint |
-| Claude Code (Opus 5.5) | "No wait wait, The point is for me to understand the tool, but I dont understand anything that I have done so far, what is swytchcode, what is the point of using it? What does it? What is the meaning of the commands that I have run till now, explain them fast" | Yes. It explained the tool and each command in plain language |
-| Claude Code (Opus 5.5) | "So what operation are we performing via add now?" | Yes. It explained that `add` only enables `github.issue.create`, and that `exec` is what creates the issue |
 | Claude Code (Opus 5.5) | "Auth has been loading for 10 damn minutes", then "No progress" with a screenshot, then a screenshot of the dropdown | Partly. It correctly advised against "Create a new connection" and gave fallback steps. Its theory about a blocked page was unconfirmed, and the actual cause is still unknown |
-| Claude Code (Opus 5.5) | "Now what should I do, Can I create the repo?" | Yes. It confirmed the repo starts empty and gave the next commands |
-| Claude Code (Opus 5.5) | Pasted my dry-run output with "I hope there's no tokens in here" | Yes. It confirmed the token was redacted, explained the sandbox endpoint problem, and suggested switching to `production`. That worked: the issue was created |
-| Claude Code (Opus 5.5) | "save the script as report-bug.ps1 for me" (Claude wrote the script after I asked for the next step) | Yes. The missing-title check printed the usage line, and a real run created issue #2 and printed its link |
+| Claude Code (Opus 5.5) | Pasted my dry-run output| Yes. It confirmed the token was redacted, explained the sandbox endpoint problem, and suggested switching to `production`. That worked: the issue was created |
+| Claude Code (Opus 5.5) | "save the script as report-bug.ps1 for me"  | Yes. The missing-title check printed the usage line, and a real run created issue #2 and printed its link |
 | Claude Code (Opus 5.5) | Shared my account of how GitHub connected and my understanding of `github.issue.create` | Yes. It corrected my understanding of the response formats and drafted the README for me to edit |
-| Claude Code (Opus 5.5) | "Can we create one more tool using SwytchCode, and then send it?", then "Why should it be small, let's go for something medium complicated...." | Yes. It proposed and wrote `triage.ps1` and tested listing and the error path. I tested commenting and closing, which worked. Claude then spotted a closed issue still listed in my output, confirmed the close on GitHub, and changed the script (Friction #11) |
+| Claude Code (Opus 5.5) | "Can we create one more tool using SwytchCode, like a triage of tools, using the same Github Issue Workplace" | Yes. It proposed and wrote `triage.ps1` and tested listing and the error path. I tested commenting and closing, which worked. Claude then spotted a closed issue still listed in my output, confirmed the close on GitHub, and changed the script (Friction #11) |
 | Claude Code (Opus 5.5) | "Explain to me what the triage.ps1 does, and explain the syntax of the powershell script as well," | Yes. It explained the script section by section |
-| Claude Code (Opus 5.5) | "Okay, now can I connect it to any of my existing projects, and then showcase it, would look really nice" | Partly. It first suggested tracking the project's GitHub issues, which wasn't what I wanted |
+| Claude Code (Opus 5.5) | "Okay, now can I connect it to any of my existing projects, and then showcase it, | Partly. It first suggested tracking the project's GitHub issues, which wasn't what I wanted |
 | Claude Code (Opus 5.5) | "use scam-investigator, but why are you trying to include Github to it, Can I use this project alone, like use its API endpoints to somehow connect swytchcode?" | Yes. It tested a hand-written provider against my live API and found three workarounds (Friction #12). This used three real investigations |
 | Claude Code (Opus 5.5) | "yes, go ahead, We are not extending a WrekenFile we are creating a new one right? So Can you explain what a WrekenFile is and the process of creating one for a custom proect and how it differs from an existing one such as Github" | Yes. It added the provider to this project, wrote `check-scam.ps1` and explained Wrekenfiles. It also found that double quotes in a message were lost when running through a nested `powershell -File` |
