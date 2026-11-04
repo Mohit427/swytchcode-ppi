@@ -12,7 +12,7 @@ Each entry: step attempting, command/action, expected, actual (exact output, sec
 
 - [x] Installed the Swytchcode CLI (`swy` works in PowerShell)
 - [x] Initialized a project (`SwytPPI`, sandbox mode, second attempt; see Friction #7)
-- [ ] Inspected the Wrekenfile
+- [x] Inspected the Wrekenfile
 - [x] Executed one API operation (`github.issue.create`, created Mohit427/swytchcode-ppi#1)
 - [x] Built the small example (`report-bug.ps1`, created Mohit427/swytchcode-ppi#2)
 - [x] Created a new Wrekenfile for my own API (`scam-investigator`)
