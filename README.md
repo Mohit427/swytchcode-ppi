@@ -1,11 +1,12 @@
-# Swytchcode GitHub bug tools
+# Swytchcode custom API and GitHub tools
 
-Two PowerShell scripts that create and triage GitHub issues through Swytchcode, built to learn the tool and record what a first-time user runs into.
+PowerShell tools built to learn Swytchcode and record what a first-time user runs into. The main one, `check-scam.ps1`, calls my own [Scam Investigator](https://github.com/Mohit427/scam-investigator) API through a Wrekenfile I created for it. Two others create and triage GitHub issues through Swytchcode's GitHub provider.
 
 ## Problem and intended user
 
 A developer wants to log a bug from the terminal without opening GitHub or handling API tokens in a script.
 
+- **`check-scam.ps1`** sends a suspicious message to Scam Investigator and prints the verdict, reasons, advice and evidence. It's for someone who wants to check a message from the terminal, or a developer who wants to call this API without writing HTTP code.
 - **`report-bug.ps1`** takes a title and description, previews the request, asks for confirmation, creates the issue, and prints its link.
 - **`triage.ps1`** lists open issues and lets you comment on one, or post a reason and close it. It previews every change and asks for confirmation first.
 
@@ -21,6 +22,34 @@ Swytchcode handles the GitHub login and sends the requests. These are scripts ra
   - `github.issue.update`: `PATCH /repos/{owner}/{repo}/issues/{issue_number}`
 - **Authentication:** OAuth, through `swy auth connect github`
 - **Workflows:** `swy list workflows` showed none installed
+
+## Custom provider: Scam Investigator
+
+Swytchcode's docs don't describe creating a provider, so I worked this out by using the downloaded GitHub bundle as a pattern. It's an undocumented workaround, not an official feature.
+
+| File | Purpose |
+|---|---|
+| `.swytchcode/integrations/ScamInvestigator/api/1.0.0/wrekenfile.yaml` | Describes the two operations: `GET /health` and `POST /api/investigate` |
+| `.swytchcode/integrations/ScamInvestigator/api/1.0.0/methods.json` | Lists the operation IDs for `swy list methods` |
+| `.swytchcode/integrations/manifest.json` | Sets the base URL, timeouts and response size limit |
+
+To register it after those files exist:
+
+```powershell
+swy add provider ScamInvestigator.api@1.0.0
+swy add method scaminvestigator.health.get
+swy add method scaminvestigator.investigate.create
+```
+
+It needed three workarounds:
+
+| Problem | Fix |
+|---|---|
+| `"auth": {"type": "none"}` is rejected | Leave `auth` out, because the API is public |
+| An investigation takes about a minute | Raise `http_timeout_ms` and `total_timeout_ms`, and set `max_retries` to `0` |
+| The streaming response fails with `response is not valid JSON` | Use `swy exec --raw` and read the `data:` lines from `body` |
+
+No `swy auth connect` step is needed for this provider.
 
 ## Setup and commands
 
@@ -54,6 +83,8 @@ swy exec github.issue.create --input owner=<owner> --input repo=<repo> --body is
 
 ## What worked
 
+- **Custom API call:** `swy exec scaminvestigator.investigate.create --raw` returned a `likely_scam` verdict from my live API.
+- **Two providers together:** the GitHub provider and my hand-written provider both work in this project.
 - **Direct API call:** `swy exec` created [issue #1](https://github.com/Mohit427/swytchcode-ppi/issues/1).
 - **Example script:** `report-bug.ps1` created [issue #2](https://github.com/Mohit427/swytchcode-ppi/issues/2) and printed its link.
 - **Input check:** running the script without a title printed the usage line and made no API call.
@@ -75,9 +106,23 @@ The full details are in [friction-diary.md](friction-diary.md).
 | Wrekenfile location | `swy get` created it, not `swy init` as the assignment describes | Found it under `.swytchcode/integrations/` |
 | Telemetry warnings | `posthog` warnings appear after routine commands | Harmless so far, not fixed |
 | Unclear method ID | Listing issues uses `github.issue.get1`, not a name like `list` | Found it by searching the Wrekenfile summaries |
+| No docs for a custom API | I found no documented way to create a provider or Wrekenfile | Hand-wrote one with three workarounds (see above) |
 | Stale list after closing | A closed issue still appeared in the next list, about 2 seconds later | Confirmed closed on GitHub; `triage.ps1` now hides issues it closed in that run. Cause unknown |
 
 ## How to reproduce
+
+### Custom API
+
+This repo already includes the provider files. Allow scripts for this PowerShell window, then run the tool. Use single quotes around the message so any double quotes inside it are kept:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\check-scam.ps1 -Message 'Your bank account will be blocked today. Share the OTP you received to keep it active.'
+```
+
+Add `-DryRun` to preview the request without sending it. Each real run uses the live app's API quota.
+
+### GitHub tools
 
 1. Complete the setup above.
 2. Change `$swyArgs` in `report-bug.ps1` to use your own owner and repo.
@@ -132,4 +177,4 @@ Open questions:
 
 ## AI usage
 
-I used Claude Code (Opus 5.5) to explain commands, debug problems, inspect the Wrekenfile, and draft `report-bug.ps1`, `triage.ps1` and this README. I ran the setup commands and API calls myself, and Claude ran some read-only checks such as listing methods and inspecting files. Exact prompts and whether each answer worked are in the AI usage log in [friction-diary.md](friction-diary.md).
+I used Claude Code (Opus 5.5) to explain commands, debug problems, inspect the Wrekenfile, and draft `report-bug.ps1`, `triage.ps1`, `check-scam.ps1`, the custom Wrekenfile and this README. Claude also tested the custom provider against my live API. I ran the setup commands and API calls myself, and Claude ran some read-only checks such as listing methods and inspecting files. Exact prompts and whether each answer worked are in the AI usage log in [friction-diary.md](friction-diary.md).

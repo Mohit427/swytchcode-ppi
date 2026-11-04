@@ -1,0 +1,1 @@
+{"methods":[{"method_uuid":"","method_name":"Check service health","canonical_id":"scaminvestigator.health.get"},{"method_uuid":"","method_name":"Investigate a suspicious message","canonical_id":"scaminvestigator.investigate.create"}]}

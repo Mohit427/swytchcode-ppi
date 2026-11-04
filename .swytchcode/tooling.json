@@ -3,6 +3,9 @@
   "integrations": {
     "GitHub.github": {
       "version": "1.1.4"
+    },
+    "ScamInvestigator.api": {
+      "version": "1.0.0"
     }
   },
   "mode": "production",
@@ -9185,6 +9188,54 @@
         "status": 200
       },
       "summary": "Update an issue",
+      "type": "method"
+    },
+    "scaminvestigator.health.get": {
+      "desc": "Returns whether the Scam Investigator service is up.",
+      "inputs": null,
+      "integration": "ScamInvestigator.api@1.0.0",
+      "method_hash": "6b47f31683615f0478589c0b1500d8e0871c27387872e5d47810223225103b82",
+      "output": {
+        "schema": {
+          "type": "object"
+        },
+        "status": 200
+      },
+      "summary": "Check service health",
+      "type": "method"
+    },
+    "scaminvestigator.investigate.create": {
+      "desc": "Runs live security checks on a message and streams findings and a verdict.",
+      "inputs": [
+        {
+          "body": {
+            "CONTENT_TYPE": "application/json",
+            "LOCATION": "body",
+            "REQUIRED": true,
+            "TYPE": "OBJECT",
+            "schema": {
+              "properties": {
+                "message": {
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
+            }
+          }
+        }
+      ],
+      "integration": "ScamInvestigator.api@1.0.0",
+      "method_hash": "c6cf3ff40a8229f7b8b1971bbebc1eea240d0f8e0520dfe8ab4a3181b790d6df",
+      "output": {
+        "schema": {
+          "type": "string"
+        },
+        "status": 200
+      },
+      "summary": "Investigate a suspicious message",
       "type": "method"
     }
   },

@@ -1,0 +1,53 @@
+VERSION: 2.0.2
+DEFAULTS:
+  w_base_url: https://scam-investigator.vercel.app
+METHODS:
+  scaminvestigator.health.get:
+    SUMMARY: Check service health
+    DESC: Returns whether the Scam Investigator service is up.
+    HTTP:
+      METHOD: GET
+      ENDPOINT: /health
+      HEADERS: {}
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    RETURNS:
+      - RETURNTYPE: OBJECT
+        RETURNVAR: health
+        STATUS: 200
+    CANONICAL_ID: scaminvestigator.health.get
+  scaminvestigator.investigate.create:
+    SUMMARY: Investigate a suspicious message
+    DESC: Runs live security checks on a message and streams findings and a verdict.
+    HTTP:
+      METHOD: POST
+      ENDPOINT: /api/investigate
+      HEADERS:
+        Content-Type: application/json
+      CONTENT_TYPE: application/json
+      ACCEPT: text/event-stream
+      BODY:
+        TYPE: STRUCT(InvestigateRequest)
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    INPUTS:
+      - body:
+          TYPE: STRUCT(InvestigateRequest)
+          REQUIRED: true
+          LOCATION: body
+          CONTENT_TYPE: application/json
+    RETURNS:
+      - RETURNTYPE: STRING
+        RETURNVAR: stream
+        STATUS: 200
+    CANONICAL_ID: scaminvestigator.investigate.create
+STRUCTS:
+  InvestigateRequest:
+    - name: message
+      TYPE: STRING
+      REQUIRED: true
+      comment: The suspicious message or link to investigate.

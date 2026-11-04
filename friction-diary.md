@@ -15,6 +15,8 @@ Each entry: step attempting, command/action, expected, actual (exact output, sec
 - [ ] Inspected the Wrekenfile
 - [x] Executed one API operation (`github.issue.create`, created Mohit427/swytchcode-ppi#1)
 - [x] Built the small example (`report-bug.ps1`, created Mohit427/swytchcode-ppi#2)
+- [x] Created a new Wrekenfile for my own API (`scam-investigator`)
+- [ ] Ran `check-scam.ps1` against the live API
 - [ ] Wrote the 150-250 word explanation
 - [ ] Created the marketing asset
 - [x] README and GitHub repository (demo link still to add)
@@ -299,7 +301,58 @@ Init created `~/CLAUDE.md`, `~/skills.md`, `~/.swytchcode/tooling.json`, `~/.swy
 
 ---
 
-## Friction #12
+## Friction #12: No documented way to add my own API
+
+**Step attempting:** Calling my own project's API (`POST /api/investigate` on scam-investigator) through Swytchcode.
+
+**Command / action:** Searched docs.swytchcode.com/llms.txt, docs.swytchcode.com/cli/integrations/, docs.swytchcode.com/reference/commands/ and docs.swytchcode.com/configuration/manifest-json/. Then Claude hand-wrote `.swytchcode/integrations/ScamInvestigator/api/1.0.0/wrekenfile.yaml`, `methods.json` and a `manifest.json` entry, using the GitHub bundle as the pattern.
+
+**Expected:** A documented command to add a custom API, or to import its OpenAPI spec.
+
+**Actual:** I found no docs for creating a provider or Wrekenfile. The hand-written bundle did work with `swy add provider`, `swy list`, `swy add method`, `swy info` and `swy doctor`, but three problems appeared.
+
+**1. An API with no login**
+
+```
+{"error":"unsupported manifest auth type \"none\" for ScamInvestigator.api@1.0.0 - upgrade the CLI to the latest version or re-fetch the provider","category":"auth",...}
+```
+
+The message suggests upgrading, which doesn't help. Fix: leave `auth` out of the manifest entry.
+
+**2. A slow API**
+
+The first real call failed after 31 seconds with:
+
+```
+{"error":"Failed to complete execution.","category":"internal","suggested_action":"run: swytchcode doctor to diagnose the issue",...}
+```
+
+`swy doctor` is not what would reveal this. The time matches the 30-second `http_timeout_ms` in the GitHub manifest, so I suspected a timeout. Fix: raise the limits in `execution_policy`. The next run lasted 52 seconds and failed differently (below), although I can't say for certain that the first failure was a timeout.
+
+**3. A streaming API**
+
+```
+{"error":"response is not valid JSON: data: {\"type\": \"step\", ...
+```
+
+The API had already returned its results. Fix: use `swy exec ... --raw`, which returns the stream as text in a `body` field, with `status_code` alongside it.
+
+**What I tried next:** Claude tested each fix in a throwaway folder. This took three real investigations. The third returned `likely_scam` at 0.6 confidence.
+
+**Resolved?** Yes, with undocumented workarounds. I don't know whether `swy get` or `swy sync` keep a hand-written provider. Calling it through the MCP server is untested.
+
+**Also seen:** `swy init --non-interactive --mode production --editor none`, run inside a script in an empty folder, produced no result for over 2 minutes and created no files. I didn't investigate it and wrote the project files directly instead.
+
+**Feedback for Swytchcode:**
+
+1. Document how to create a provider, or add a command that generates one from an OpenAPI spec. My API already publishes `/openapi.json`.
+2. Accept an explicit `"type": "none"` for public APIs, and fix the "upgrade the CLI" message.
+3. Report timeouts as timeouts, not as a generic internal error.
+4. Support `text/event-stream` responses in normal and `--json` mode, or suggest `--raw` in the error.
+
+---
+
+## Friction #13
 
 **Step attempting:**
 **Command / action:**
@@ -330,3 +383,7 @@ Init created `~/CLAUDE.md`, `~/skills.md`, `~/.swytchcode/tooling.json`, `~/.swy
 | Claude Code (Opus 5.5) | "save the script as report-bug.ps1 for me" (Claude wrote the script after I asked for the next step) | Yes. The missing-title check printed the usage line, and a real run created issue #2 and printed its link |
 | Claude Code (Opus 5.5) | Shared my account of how GitHub connected and my understanding of `github.issue.create` | Yes. It corrected my understanding of the response formats and drafted the README for me to edit |
 | Claude Code (Opus 5.5) | "Can we create one more tool using SwytchCode, and then send it?", then "Why should it be small, let's go for something medium complicated...." | Yes. It proposed and wrote `triage.ps1` and tested listing and the error path. I tested commenting and closing, which worked. Claude then spotted a closed issue still listed in my output, confirmed the close on GitHub, and changed the script (Friction #11) |
+| Claude Code (Opus 5.5) | "Explain to me what the triage.ps1 does, and explain the syntax of the powershell script as well," | Yes. It explained the script section by section |
+| Claude Code (Opus 5.5) | "Okay, now can I connect it to any of my existing projects, and then showcase it, would look really nice" | Partly. It first suggested tracking the project's GitHub issues, which wasn't what I wanted |
+| Claude Code (Opus 5.5) | "use scam-investigator, but why are you trying to include Github to it, Can I use this project alone, like use its API endpoints to somehow connect swytchcode?" | Yes. It tested a hand-written provider against my live API and found three workarounds (Friction #12). This used three real investigations |
+| Claude Code (Opus 5.5) | "yes, go ahead, We are not extending a WrekenFile we are creating a new one right? So Can you explain what a WrekenFile is and the process of creating one for a custom proect and how it differs from an existing one such as Github" | Yes. It added the provider to this project, wrote `check-scam.ps1` and explained Wrekenfiles. It also found that double quotes in a message were lost when running through a nested `powershell -File` |
