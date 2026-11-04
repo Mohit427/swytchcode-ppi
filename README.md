@@ -1,17 +1,24 @@
-# Swytchcode GitHub issue reporter
+# Swytchcode GitHub bug tools
 
-A small PowerShell script that creates a GitHub issue through Swytchcode, built to learn the tool and record what a first-time user runs into.
+Two PowerShell scripts that create and triage GitHub issues through Swytchcode, built to learn the tool and record what a first-time user runs into.
 
 ## Problem and intended user
 
 A developer wants to log a bug from the terminal without opening GitHub or handling API tokens in a script.
 
-`report-bug.ps1` takes a title and description, previews the request, asks for confirmation, creates the issue, and prints its link. Swytchcode handles the GitHub login and sends the request.
+- **`report-bug.ps1`** takes a title and description, previews the request, asks for confirmation, creates the issue, and prints its link.
+- **`triage.ps1`** lists open issues and lets you comment on one, or post a reason and close it. It previews every change and asks for confirmation first.
+
+Swytchcode handles the GitHub login and sends the requests. These are scripts rather than AI agents. `triage.ps1` shows only the first 30 open issues.
 
 ## API and integration explored
 
 - **Provider:** `GitHub.github@1.1.4`
-- **Method:** `github.issue.create` (`POST /repos/{owner}/{repo}/issues`)
+- **Methods:**
+  - `github.issue.create`: `POST /repos/{owner}/{repo}/issues`
+  - `github.issue.get1`: `GET /repos/{owner}/{repo}/issues`
+  - `github.issue.comments.create`: `POST /repos/{owner}/{repo}/issues/{issue_number}/comments`
+  - `github.issue.update`: `PATCH /repos/{owner}/{repo}/issues/{issue_number}`
 - **Authentication:** OAuth, through `swy auth connect github`
 - **Workflows:** `swy list workflows` showed none installed
 
@@ -25,6 +32,9 @@ swy search github
 swy get github
 swy list methods
 swy add method github.issue.create
+swy add method github.issue.get1
+swy add method github.issue.comments.create
+swy add method github.issue.update
 swy auth connect github
 swy auth status
 ```
@@ -48,6 +58,8 @@ swy exec github.issue.create --input owner=<owner> --input repo=<repo> --body is
 - **Example script:** `report-bug.ps1` created [issue #2](https://github.com/Mohit427/swytchcode-ppi/issues/2) and printed its link.
 - **Input check:** running the script without a title printed the usage line and made no API call.
 - **Dry run:** the preview showed the request with the token replaced by `[REDACTED]`.
+- **Triage script:** `triage.ps1` commented on and closed [issue #1](https://github.com/Mohit427/swytchcode-ppi/issues/1), confirmed with `gh issue view`.
+- **Error handling:** a call to a nonexistent repo returned a clear `404` with `error_category`, `retryable` and `suggested_action` fields.
 
 ## What did not work and errors encountered
 
@@ -62,6 +74,8 @@ The full details are in [friction-diary.md](friction-diary.md).
 | Quickstart example | It uses `github.issues.create`, but the installed ID is `github.issue.create`, and the inputs differ | Used `swy info` and the Wrekenfile instead |
 | Wrekenfile location | `swy get` created it, not `swy init` as the assignment describes | Found it under `.swytchcode/integrations/` |
 | Telemetry warnings | `posthog` warnings appear after routine commands | Harmless so far, not fixed |
+| Unclear method ID | Listing issues uses `github.issue.get1`, not a name like `list` | Found it by searching the Wrekenfile summaries |
+| Stale list after closing | A closed issue still appeared in the next list, about 2 seconds later | Confirmed closed on GitHub; `triage.ps1` now hides issues it closed in that run. Cause unknown |
 
 ## How to reproduce
 
@@ -74,6 +88,14 @@ powershell -ExecutionPolicy Bypass -File .\report-bug.ps1 -Title "Login button d
 ```
 
 This creates a real issue, so use a repo you own.
+
+4. Run the triage tool on your own repo. Comments and closes are real, but each one asks for confirmation first:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\triage.ps1 -Owner <owner> -Repo <repo>
+```
+
+To only list open issues, add `-ListOnly`.
 
 ## Demo
 
@@ -110,4 +132,4 @@ Open questions:
 
 ## AI usage
 
-I used Claude Code (Opus 5.5) to explain commands, debug problems, inspect the Wrekenfile, and draft `report-bug.ps1` and this README. I ran the setup commands and API calls myself, and Claude ran some read-only checks such as listing methods and inspecting files. Exact prompts and whether each answer worked are in the AI usage log in [friction-diary.md](friction-diary.md).
+I used Claude Code (Opus 5.5) to explain commands, debug problems, inspect the Wrekenfile, and draft `report-bug.ps1`, `triage.ps1` and this README. I ran the setup commands and API calls myself, and Claude ran some read-only checks such as listing methods and inspecting files. Exact prompts and whether each answer worked are in the AI usage log in [friction-diary.md](friction-diary.md).

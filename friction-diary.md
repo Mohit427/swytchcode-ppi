@@ -17,7 +17,7 @@ Each entry: step attempting, command/action, expected, actual (exact output, sec
 - [x] Built the small example (`report-bug.ps1`, created Mohit427/swytchcode-ppi#2)
 - [ ] Wrote the 150-250 word explanation
 - [ ] Created the marketing asset
-- [ ] README and GitHub repository
+- [x] README and GitHub repository (demo link still to add)
 - [ ] Demo video (3 minutes max)
 - [ ] Submitted the Google Form
 
@@ -261,7 +261,45 @@ Init created `~/CLAUDE.md`, `~/skills.md`, `~/.swytchcode/tooling.json`, `~/.swy
 
 ---
 
-## Friction #10
+## Friction #10: Method ID doesn't say what it does
+
+**Step attempting:** Finding the operation that lists a repo's open issues for `triage.ps1`.
+
+**Command / action:** Searched the Wrekenfile for the summary "List repository issues", then ran `swy exec github.issue.get1 --input owner=Mohit427 --input repo=swytchcode-ppi --json`.
+
+**Expected:** An ID like `github.issue.list`.
+
+**Actual:** The ID is `github.issue.get1`. The output also printed `🔐 Running live - GitHub (production)`, even though this call only reads data.
+
+**What I tried next:** Claude matched the summary to the ID in the Wrekenfile. The call worked and returned the issues in a `data` list.
+
+**Resolved?** Yes, by searching on the summary instead of the ID.
+
+**Feedback for Swytchcode:** Use descriptive IDs such as `github.issue.list`, because numeric suffixes make an ID hard to guess or review. Show in the live message whether a call reads or changes data.
+
+**What worked well:** A call to a nonexistent repo returned a clear structured error with `"error_category":"not_found"`, `"retryable":false` and a `suggested_action`, which is useful for scripts and agents.
+
+---
+
+## Friction #11: Closed issue still appeared in the next list
+
+**Step attempting:** Closing issue #1 with `triage.ps1`.
+
+**Command / action:** `powershell -ExecutionPolicy Bypass -File .\triage.ps1`, then choosing `x` on #1. The script closed it through `github.issue.update` and immediately listed issues again through `github.issue.get1`.
+
+**Expected:** #1 to disappear from the list.
+
+**Actual:** The script printed `Closed: https://github.com/Mohit427/swytchcode-ppi/issues/1`, but the next list still showed `#1    Swytchcode test issue`.
+
+**What I tried next:** Claude checked GitHub with `gh issue view 1`. It showed `CLOSED`, closed at 10:51:53 local time with both comments, and a listing about 30 seconds later showed only #2.
+
+**Resolved?** Yes for my tool: `triage.ps1` now hides issues it closed during the same run. I don't know whether the delay came from GitHub or Swytchcode. The request used `state=open`, so the delay looks like a short-lived stale result rather than a wrong filter.
+
+**Lesson:** A successful write doesn't guarantee that an immediate read shows the change. Tools and agents should check the write's own response or allow for a delay.
+
+---
+
+## Friction #12
 
 **Step attempting:**
 **Command / action:**
@@ -291,3 +329,4 @@ Init created `~/CLAUDE.md`, `~/skills.md`, `~/.swytchcode/tooling.json`, `~/.swy
 | Claude Code (Opus 5.5) | Pasted my dry-run output with "I hope there's no tokens in here" | Yes. It confirmed the token was redacted, explained the sandbox endpoint problem, and suggested switching to `production`. That worked: the issue was created |
 | Claude Code (Opus 5.5) | "save the script as report-bug.ps1 for me" (Claude wrote the script after I asked for the next step) | Yes. The missing-title check printed the usage line, and a real run created issue #2 and printed its link |
 | Claude Code (Opus 5.5) | Shared my account of how GitHub connected and my understanding of `github.issue.create` | Yes. It corrected my understanding of the response formats and drafted the README for me to edit |
+| Claude Code (Opus 5.5) | "Can we create one more tool using SwytchCode, and then send it?", then "Why should it be small, let's go for something medium complicated...." | Yes. It proposed and wrote `triage.ps1` and tested listing and the error path. I tested commenting and closing, which worked. Claude then spotted a closed issue still listed in my output, confirmed the close on GitHub, and changed the script (Friction #11) |
