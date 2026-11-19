@@ -144,7 +144,7 @@ To only list open issues, add `-ListOnly`.
 
 ## Demo
 
-[Watch the demo](ADD-DEMO-LINK-HERE)
+[Watch the demo](https://drive.google.com/file/d/1NYqftLvZATTEnzD_coSqG6DG2-3h8tKl/view?usp=drive_link)
 
 ## Notes on the generated Wrekenfile
 
