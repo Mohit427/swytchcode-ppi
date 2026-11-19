@@ -1,6 +1,9 @@
 {
   "editor": "claude",
   "integrations": {
+    "CineBook.api": {
+      "version": "1.0.0"
+    },
     "GitHub.github": {
       "version": "1.1.4"
     },
@@ -10,6 +13,1439 @@
   },
   "mode": "production",
   "tools": {
+    "cinebook.auth.login": {
+      "desc": "Checks an email and password and returns a JWT. Send it to the other\noperations as the header \"Authorization: Bearer \u003ctoken\u003e\". It expires\nafter 30 minutes.",
+      "inputs": [
+        {
+          "body": {
+            "CONTENT_TYPE": "application/json",
+            "LOCATION": "body",
+            "REQUIRED": true,
+            "TYPE": "OBJECT",
+            "schema": {
+              "properties": {
+                "email": {
+                  "required": true,
+                  "type": "string"
+                },
+                "password": {
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "email",
+                "password"
+              ]
+            }
+          }
+        }
+      ],
+      "integration": "CineBook.api@1.0.0",
+      "method_hash": "e88dde5543678d0a6486109f0cae5e50bf0ee797aa06445e53a89cb10a8ccd60",
+      "output": {
+        "schema": {
+          "properties": {
+            "token": {
+              "required": true,
+              "type": "string"
+            },
+            "token_type": {
+              "required": true,
+              "type": "string"
+            },
+            "user": {
+              "properties": {
+                "created_at": {
+                  "required": true,
+                  "type": "TIMESTAMP"
+                },
+                "customer_id": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "email": {
+                  "required": true,
+                  "type": "string"
+                },
+                "name": {
+                  "required": true,
+                  "type": "string"
+                },
+                "phone": {
+                  "required": true,
+                  "type": "string"
+                },
+                "role": {
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "customer_id",
+                "name",
+                "email",
+                "phone",
+                "role",
+                "created_at"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "user",
+            "token",
+            "token_type"
+          ]
+        },
+        "status": 200
+      },
+      "summary": "Log in and get a token",
+      "type": "method"
+    },
+    "cinebook.auth.me": {
+      "desc": "Returns the customer that the bearer token belongs to.",
+      "inputs": null,
+      "integration": "CineBook.api@1.0.0",
+      "method_hash": "ff4a7231cb6764282adf2870ac2a42bcb6d1e9f6b466c8399bd990cd9b056c80",
+      "output": {
+        "schema": {
+          "properties": {
+            "created_at": {
+              "required": true,
+              "type": "TIMESTAMP"
+            },
+            "customer_id": {
+              "required": true,
+              "type": "integer"
+            },
+            "email": {
+              "required": true,
+              "type": "string"
+            },
+            "name": {
+              "required": true,
+              "type": "string"
+            },
+            "phone": {
+              "required": true,
+              "type": "string"
+            },
+            "role": {
+              "required": true,
+              "type": "string"
+            }
+          },
+          "required": [
+            "customer_id",
+            "name",
+            "email",
+            "phone",
+            "role",
+            "created_at"
+          ]
+        },
+        "status": 200
+      },
+      "summary": "Get the logged-in customer",
+      "type": "method"
+    },
+    "cinebook.bookings.cancel": {
+      "desc": "Cancels a confirmed booking and refunds it in full. Allowed only by its\nowner and only up to 2 hours before the show. Needs \"Authorization: Bearer \u003ctoken\u003e\".",
+      "inputs": [
+        {
+          "booking_id": {
+            "LOCATION": "path",
+            "REQUIRED": true,
+            "TYPE": "INT"
+          }
+        }
+      ],
+      "integration": "CineBook.api@1.0.0",
+      "method_hash": "f57ea6d268c3ed2db558558352ef44b921f7745da5a79671cca2bd11ebb58337",
+      "output": {
+        "schema": {
+          "properties": {
+            "booking_id": {
+              "required": true,
+              "type": "integer"
+            },
+            "payment_status": {
+              "required": true,
+              "type": "string"
+            },
+            "refunded_amount": {
+              "required": true,
+              "type": "integer"
+            },
+            "status": {
+              "required": true,
+              "type": "string"
+            },
+            "tickets_cancelled": {
+              "required": true,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "booking_id",
+            "status",
+            "tickets_cancelled",
+            "refunded_amount",
+            "payment_status"
+          ]
+        },
+        "status": 200
+      },
+      "summary": "Cancel a booking",
+      "type": "method"
+    },
+    "cinebook.bookings.create": {
+      "desc": "Books 1 to 6 seats and records the payment in one database transaction.\nThe seats are locked while booking, so two customers cannot book the\nsame seat. Needs \"Authorization: Bearer \u003ctoken\u003e\". Not safe to retry\nblindly: check the customer's bookings before trying again.",
+      "inputs": [
+        {
+          "body": {
+            "CONTENT_TYPE": "application/json",
+            "LOCATION": "body",
+            "REQUIRED": true,
+            "TYPE": "OBJECT",
+            "schema": {
+              "properties": {
+                "payment_method": {
+                  "required": true,
+                  "type": "string"
+                },
+                "seat_ids": {
+                  "required": true,
+                  "type": "[]INT"
+                },
+                "show_id": {
+                  "required": true,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "show_id",
+                "seat_ids",
+                "payment_method"
+              ]
+            }
+          }
+        }
+      ],
+      "integration": "CineBook.api@1.0.0",
+      "method_hash": "a2572406ff8e22c71de691323b1d794e2b69832f3ead1ed46c9094d1d5958208",
+      "output": {
+        "schema": {
+          "properties": {
+            "booking_id": {
+              "required": true,
+              "type": "integer"
+            },
+            "booking_time": {
+              "required": true,
+              "type": "TIMESTAMP"
+            },
+            "can_cancel": {
+              "required": true,
+              "type": "boolean"
+            },
+            "customer_id": {
+              "required": true,
+              "type": "integer"
+            },
+            "payment": {
+              "properties": {
+                "amount": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "method": {
+                  "required": true,
+                  "type": "string"
+                },
+                "paid_at": {
+                  "required": false,
+                  "type": "TIMESTAMP"
+                },
+                "payment_id": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "status": {
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "payment_id",
+                "amount",
+                "method",
+                "status"
+              ],
+              "type": "object"
+            },
+            "show": {
+              "properties": {
+                "end_time": {
+                  "required": true,
+                  "type": "string"
+                },
+                "movie": {
+                  "properties": {
+                    "duration_min": {
+                      "required": true,
+                      "type": "integer"
+                    },
+                    "movie_id": {
+                      "required": true,
+                      "type": "integer"
+                    },
+                    "poster_url": {
+                      "required": false,
+                      "type": "string"
+                    },
+                    "title": {
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "movie_id",
+                    "title",
+                    "duration_min"
+                  ],
+                  "type": "object"
+                },
+                "screen": {
+                  "properties": {
+                    "screen_id": {
+                      "required": true,
+                      "type": "integer"
+                    },
+                    "screen_name": {
+                      "required": true,
+                      "type": "string"
+                    },
+                    "screen_type": {
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "screen_id",
+                    "screen_name",
+                    "screen_type"
+                  ],
+                  "type": "object"
+                },
+                "seats_left": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "show_date": {
+                  "required": true,
+                  "type": "DATE"
+                },
+                "show_id": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "start_time": {
+                  "required": true,
+                  "type": "string"
+                },
+                "theatre": {
+                  "properties": {
+                    "city": {
+                      "required": true,
+                      "type": "string"
+                    },
+                    "name": {
+                      "required": true,
+                      "type": "string"
+                    },
+                    "theatre_id": {
+                      "required": true,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "theatre_id",
+                    "name",
+                    "city"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "show_id",
+                "show_date",
+                "start_time",
+                "end_time",
+                "movie",
+                "theatre",
+                "screen",
+                "seats_left"
+              ],
+              "type": "object"
+            },
+            "status": {
+              "required": true,
+              "type": "string"
+            },
+            "tickets": {
+              "items": {
+                "properties": {
+                  "price": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "seat": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "seat_category": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "seat_id": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "status": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "ticket_id": {
+                    "required": true,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "ticket_id",
+                  "seat_id",
+                  "seat",
+                  "seat_category",
+                  "price",
+                  "status"
+                ],
+                "type": "object"
+              },
+              "required": true,
+              "type": "array"
+            },
+            "total_amount": {
+              "required": true,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "booking_id",
+            "customer_id",
+            "booking_time",
+            "total_amount",
+            "status",
+            "can_cancel",
+            "show",
+            "tickets"
+          ]
+        },
+        "status": 201
+      },
+      "summary": "Book seats for a show",
+      "type": "method"
+    },
+    "cinebook.bookings.get": {
+      "desc": "Returns a booking with its show, tickets and payment. Only its owner or an admin can see it.",
+      "inputs": [
+        {
+          "booking_id": {
+            "LOCATION": "path",
+            "REQUIRED": true,
+            "TYPE": "INT"
+          }
+        }
+      ],
+      "integration": "CineBook.api@1.0.0",
+      "method_hash": "a42f1688507f01b625604ddeeb7065af41a745ad90a8149f487c8ceffe00d2f3",
+      "output": {
+        "schema": {
+          "properties": {
+            "booking_id": {
+              "required": true,
+              "type": "integer"
+            },
+            "booking_time": {
+              "required": true,
+              "type": "TIMESTAMP"
+            },
+            "can_cancel": {
+              "required": true,
+              "type": "boolean"
+            },
+            "customer_id": {
+              "required": true,
+              "type": "integer"
+            },
+            "payment": {
+              "properties": {
+                "amount": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "method": {
+                  "required": true,
+                  "type": "string"
+                },
+                "paid_at": {
+                  "required": false,
+                  "type": "TIMESTAMP"
+                },
+                "payment_id": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "status": {
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "payment_id",
+                "amount",
+                "method",
+                "status"
+              ],
+              "type": "object"
+            },
+            "show": {
+              "properties": {
+                "end_time": {
+                  "required": true,
+                  "type": "string"
+                },
+                "movie": {
+                  "properties": {
+                    "duration_min": {
+                      "required": true,
+                      "type": "integer"
+                    },
+                    "movie_id": {
+                      "required": true,
+                      "type": "integer"
+                    },
+                    "poster_url": {
+                      "required": false,
+                      "type": "string"
+                    },
+                    "title": {
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "movie_id",
+                    "title",
+                    "duration_min"
+                  ],
+                  "type": "object"
+                },
+                "screen": {
+                  "properties": {
+                    "screen_id": {
+                      "required": true,
+                      "type": "integer"
+                    },
+                    "screen_name": {
+                      "required": true,
+                      "type": "string"
+                    },
+                    "screen_type": {
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "screen_id",
+                    "screen_name",
+                    "screen_type"
+                  ],
+                  "type": "object"
+                },
+                "seats_left": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "show_date": {
+                  "required": true,
+                  "type": "DATE"
+                },
+                "show_id": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "start_time": {
+                  "required": true,
+                  "type": "string"
+                },
+                "theatre": {
+                  "properties": {
+                    "city": {
+                      "required": true,
+                      "type": "string"
+                    },
+                    "name": {
+                      "required": true,
+                      "type": "string"
+                    },
+                    "theatre_id": {
+                      "required": true,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "theatre_id",
+                    "name",
+                    "city"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "show_id",
+                "show_date",
+                "start_time",
+                "end_time",
+                "movie",
+                "theatre",
+                "screen",
+                "seats_left"
+              ],
+              "type": "object"
+            },
+            "status": {
+              "required": true,
+              "type": "string"
+            },
+            "tickets": {
+              "items": {
+                "properties": {
+                  "price": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "seat": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "seat_category": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "seat_id": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "status": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "ticket_id": {
+                    "required": true,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "ticket_id",
+                  "seat_id",
+                  "seat",
+                  "seat_category",
+                  "price",
+                  "status"
+                ],
+                "type": "object"
+              },
+              "required": true,
+              "type": "array"
+            },
+            "total_amount": {
+              "required": true,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "booking_id",
+            "customer_id",
+            "booking_time",
+            "total_amount",
+            "status",
+            "can_cancel",
+            "show",
+            "tickets"
+          ]
+        },
+        "status": 200
+      },
+      "summary": "Get one booking",
+      "type": "method"
+    },
+    "cinebook.bookings.list": {
+      "desc": "Lists the logged-in customer's bookings, newest first. Needs\n\"Authorization: Bearer \u003ctoken\u003e\".",
+      "inputs": [
+        {
+          "limit": {
+            "DEFAULT": 20,
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "INT"
+          }
+        },
+        {
+          "offset": {
+            "DEFAULT": 0,
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "INT"
+          }
+        }
+      ],
+      "integration": "CineBook.api@1.0.0",
+      "method_hash": "8e2aee4f64a34bdb1caf5094474c7cfe2a2d6b2c1e044c88d8c3653126ec67b7",
+      "output": {
+        "schema": {
+          "properties": {
+            "bookings": {
+              "items": {
+                "properties": {
+                  "booking_id": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "booking_time": {
+                    "required": true,
+                    "type": "TIMESTAMP"
+                  },
+                  "can_cancel": {
+                    "required": true,
+                    "type": "boolean"
+                  },
+                  "movie": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "screen": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "seats": {
+                    "required": true,
+                    "type": "[]STRING"
+                  },
+                  "show_date": {
+                    "required": true,
+                    "type": "DATE"
+                  },
+                  "show_id": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "start_time": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "status": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "theatre": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "total_amount": {
+                    "required": true,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "booking_id",
+                  "booking_time",
+                  "total_amount",
+                  "status",
+                  "show_id",
+                  "show_date",
+                  "start_time",
+                  "movie",
+                  "theatre",
+                  "screen",
+                  "seats",
+                  "can_cancel"
+                ],
+                "type": "object"
+              },
+              "required": true,
+              "type": "array"
+            },
+            "limit": {
+              "required": true,
+              "type": "integer"
+            },
+            "offset": {
+              "required": true,
+              "type": "integer"
+            },
+            "total": {
+              "required": true,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "bookings",
+            "total",
+            "limit",
+            "offset"
+          ]
+        },
+        "status": 200
+      },
+      "summary": "List my bookings",
+      "type": "method"
+    },
+    "cinebook.health.get": {
+      "desc": "Returns ok when the CineBook API is running and can reach PostgreSQL.",
+      "inputs": null,
+      "integration": "CineBook.api@1.0.0",
+      "method_hash": "684f3eecca45499856cea70f90e934ccc675aff5efdfb4e619e6059ee3be3035",
+      "output": {
+        "schema": {
+          "properties": {
+            "database": {
+              "required": true,
+              "type": "string"
+            },
+            "status": {
+              "required": true,
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "database"
+          ]
+        },
+        "status": 200
+      },
+      "summary": "Check API and database health",
+      "type": "method"
+    },
+    "cinebook.movies.get": {
+      "desc": "Returns one movie with its genres.",
+      "inputs": [
+        {
+          "movie_id": {
+            "LOCATION": "path",
+            "REQUIRED": true,
+            "TYPE": "INT"
+          }
+        }
+      ],
+      "integration": "CineBook.api@1.0.0",
+      "method_hash": "b084c470dd1bc3c54b1f2ed5cb6980b16d5496c35cd12b93934337cef89053e7",
+      "output": {
+        "schema": {
+          "properties": {
+            "certificate": {
+              "required": true,
+              "type": "string"
+            },
+            "description": {
+              "required": false,
+              "type": "string"
+            },
+            "duration_min": {
+              "required": true,
+              "type": "integer"
+            },
+            "genres": {
+              "required": true,
+              "type": "[]STRING"
+            },
+            "language": {
+              "required": true,
+              "type": "string"
+            },
+            "movie_id": {
+              "required": true,
+              "type": "integer"
+            },
+            "poster_url": {
+              "required": false,
+              "type": "string"
+            },
+            "rating": {
+              "required": false,
+              "type": "FLOAT"
+            },
+            "release_date": {
+              "required": true,
+              "type": "DATE"
+            },
+            "title": {
+              "required": true,
+              "type": "string"
+            }
+          },
+          "required": [
+            "movie_id",
+            "title",
+            "duration_min",
+            "language",
+            "certificate",
+            "release_date",
+            "genres"
+          ]
+        },
+        "status": 200
+      },
+      "summary": "Get one movie",
+      "type": "method"
+    },
+    "cinebook.movies.list": {
+      "desc": "Lists movies by title, with optional filters. Each movie lists all of its genres.",
+      "inputs": [
+        {
+          "search": {
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "STRING",
+            "comment": "Part of the title, case-insensitive."
+          }
+        },
+        {
+          "genre": {
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "STRING",
+            "comment": "Genre name, for example Action or Drama."
+          }
+        },
+        {
+          "language": {
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "STRING"
+          }
+        },
+        {
+          "certificate": {
+            "ENUM": [
+              "U",
+              "UA",
+              "A"
+            ],
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "STRING"
+          }
+        },
+        {
+          "min_rating": {
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "FLOAT",
+            "comment": "From 0 to 10."
+          }
+        },
+        {
+          "limit": {
+            "DEFAULT": 20,
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "INT",
+            "comment": "From 1 to 100."
+          }
+        },
+        {
+          "offset": {
+            "DEFAULT": 0,
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "INT"
+          }
+        }
+      ],
+      "integration": "CineBook.api@1.0.0",
+      "method_hash": "e774be5dbf96fdd4c269c1bf32adf38d16073abf3fe9577c64b9a08a10fa01fb",
+      "output": {
+        "schema": {
+          "properties": {
+            "limit": {
+              "required": true,
+              "type": "integer"
+            },
+            "movies": {
+              "items": {
+                "properties": {
+                  "certificate": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "description": {
+                    "required": false,
+                    "type": "string"
+                  },
+                  "duration_min": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "genres": {
+                    "required": true,
+                    "type": "[]STRING"
+                  },
+                  "language": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "movie_id": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "poster_url": {
+                    "required": false,
+                    "type": "string"
+                  },
+                  "rating": {
+                    "required": false,
+                    "type": "FLOAT"
+                  },
+                  "release_date": {
+                    "required": true,
+                    "type": "DATE"
+                  },
+                  "title": {
+                    "required": true,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "movie_id",
+                  "title",
+                  "duration_min",
+                  "language",
+                  "certificate",
+                  "release_date",
+                  "genres"
+                ],
+                "type": "object"
+              },
+              "required": true,
+              "type": "array"
+            },
+            "offset": {
+              "required": true,
+              "type": "integer"
+            },
+            "total": {
+              "required": true,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "movies",
+            "total",
+            "limit",
+            "offset"
+          ]
+        },
+        "status": 200
+      },
+      "summary": "Search movies",
+      "type": "method"
+    },
+    "cinebook.shows.list": {
+      "desc": "Lists shows that have not started yet, soonest first, with the seats left in each.",
+      "inputs": [
+        {
+          "movie_id": {
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "INT"
+          }
+        },
+        {
+          "date": {
+            "FORMAT": "date",
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "STRING",
+            "comment": "Show date as YYYY-MM-DD."
+          }
+        },
+        {
+          "city": {
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "STRING",
+            "comment": "Theatre city, for example Chennai or Bengaluru."
+          }
+        },
+        {
+          "limit": {
+            "DEFAULT": 20,
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "INT"
+          }
+        },
+        {
+          "offset": {
+            "DEFAULT": 0,
+            "LOCATION": "query",
+            "REQUIRED": false,
+            "TYPE": "INT"
+          }
+        }
+      ],
+      "integration": "CineBook.api@1.0.0",
+      "method_hash": "d91603c3a2cdc357962495b28e3ebd0260d5138b10aa8e26d799515ddf56403f",
+      "output": {
+        "schema": {
+          "properties": {
+            "limit": {
+              "required": true,
+              "type": "integer"
+            },
+            "offset": {
+              "required": true,
+              "type": "integer"
+            },
+            "shows": {
+              "items": {
+                "properties": {
+                  "end_time": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "movie": {
+                    "properties": {
+                      "duration_min": {
+                        "required": true,
+                        "type": "integer"
+                      },
+                      "movie_id": {
+                        "required": true,
+                        "type": "integer"
+                      },
+                      "poster_url": {
+                        "required": false,
+                        "type": "string"
+                      },
+                      "title": {
+                        "required": true,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "movie_id",
+                      "title",
+                      "duration_min"
+                    ],
+                    "type": "object"
+                  },
+                  "screen": {
+                    "properties": {
+                      "screen_id": {
+                        "required": true,
+                        "type": "integer"
+                      },
+                      "screen_name": {
+                        "required": true,
+                        "type": "string"
+                      },
+                      "screen_type": {
+                        "required": true,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "screen_id",
+                      "screen_name",
+                      "screen_type"
+                    ],
+                    "type": "object"
+                  },
+                  "seats_left": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "show_date": {
+                    "required": true,
+                    "type": "DATE"
+                  },
+                  "show_id": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "start_time": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "theatre": {
+                    "properties": {
+                      "city": {
+                        "required": true,
+                        "type": "string"
+                      },
+                      "name": {
+                        "required": true,
+                        "type": "string"
+                      },
+                      "theatre_id": {
+                        "required": true,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "theatre_id",
+                      "name",
+                      "city"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "show_id",
+                  "show_date",
+                  "start_time",
+                  "end_time",
+                  "movie",
+                  "theatre",
+                  "screen",
+                  "seats_left"
+                ],
+                "type": "object"
+              },
+              "required": true,
+              "type": "array"
+            },
+            "total": {
+              "required": true,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "shows",
+            "total",
+            "limit",
+            "offset"
+          ]
+        },
+        "status": 200
+      },
+      "summary": "List upcoming shows",
+      "type": "method"
+    },
+    "cinebook.shows.seats": {
+      "desc": "Lists every seat in the show's screen with its category, price and\nstatus (available or taken). Use the seat_id values to book.",
+      "inputs": [
+        {
+          "show_id": {
+            "LOCATION": "path",
+            "REQUIRED": true,
+            "TYPE": "INT"
+          }
+        }
+      ],
+      "integration": "CineBook.api@1.0.0",
+      "method_hash": "24f1a54bd036c7fc6ca109f153453be837eb002814117519abd9c612aac31f30",
+      "output": {
+        "schema": {
+          "properties": {
+            "seats": {
+              "items": {
+                "properties": {
+                  "label": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "price": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "row_label": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "seat_category": {
+                    "required": true,
+                    "type": "string"
+                  },
+                  "seat_id": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "seat_number": {
+                    "required": true,
+                    "type": "integer"
+                  },
+                  "status": {
+                    "required": true,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "seat_id",
+                  "label",
+                  "row_label",
+                  "seat_number",
+                  "seat_category",
+                  "price",
+                  "status"
+                ],
+                "type": "object"
+              },
+              "required": true,
+              "type": "array"
+            },
+            "show": {
+              "properties": {
+                "end_time": {
+                  "required": true,
+                  "type": "string"
+                },
+                "movie": {
+                  "properties": {
+                    "duration_min": {
+                      "required": true,
+                      "type": "integer"
+                    },
+                    "movie_id": {
+                      "required": true,
+                      "type": "integer"
+                    },
+                    "poster_url": {
+                      "required": false,
+                      "type": "string"
+                    },
+                    "title": {
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "movie_id",
+                    "title",
+                    "duration_min"
+                  ],
+                  "type": "object"
+                },
+                "screen": {
+                  "properties": {
+                    "screen_id": {
+                      "required": true,
+                      "type": "integer"
+                    },
+                    "screen_name": {
+                      "required": true,
+                      "type": "string"
+                    },
+                    "screen_type": {
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "screen_id",
+                    "screen_name",
+                    "screen_type"
+                  ],
+                  "type": "object"
+                },
+                "seats_left": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "show_date": {
+                  "required": true,
+                  "type": "DATE"
+                },
+                "show_id": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "start_time": {
+                  "required": true,
+                  "type": "string"
+                },
+                "theatre": {
+                  "properties": {
+                    "city": {
+                      "required": true,
+                      "type": "string"
+                    },
+                    "name": {
+                      "required": true,
+                      "type": "string"
+                    },
+                    "theatre_id": {
+                      "required": true,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "theatre_id",
+                    "name",
+                    "city"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "show_id",
+                "show_date",
+                "start_time",
+                "end_time",
+                "movie",
+                "theatre",
+                "screen",
+                "seats_left"
+              ],
+              "type": "object"
+            },
+            "summary": {
+              "properties": {
+                "available": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "taken": {
+                  "required": true,
+                  "type": "integer"
+                },
+                "total": {
+                  "required": true,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "available",
+                "taken"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "show",
+            "seats",
+            "summary"
+          ]
+        },
+        "status": 200
+      },
+      "summary": "Get the seat map for a show",
+      "type": "method"
+    },
     "github.issue.comments.create": {
       "desc": "You can use the REST API to create comments on issues and pull requests. Every pull request is an issue, but not every issue is a pull request.\n\nThis endpoint triggers [notifications](https://docs.github.com/github/managing-subscriptions-and-notifications-on-github/about-notifications).\nCreating content too quickly using this endpoint may result in secondary rate limiting.\nFor more information, see \"[Rate limits for the API](https://docs.github.com/rest/using-the-rest-api/rate-limits-for-the-rest-api#about-secondary-rate-limits)\"\nand \"[Best practices for using the REST API](https://docs.github.com/rest/guides/best-practices-for-using-the-rest-api).\"\n\nThis endpoint supports the following custom media types. For more information, see \"[Media types](https://docs.github.com/rest/using-the-rest-api/getting-started-with-the-rest-api#media-types).\"\n\n- **`application/vnd.github.raw+json`**: Returns the raw markdown body. Response will include `body`. This is the default if you do not pass any specific media type.\n- **`application/vnd.github.text+json`**: Returns a text only representation of the markdown body. Response will include `body_text`.\n- **`application/vnd.github.html+json`**: Returns HTML rendered from the body's markdown. Response will include `body_html`.\n- **`application/vnd.github.full+json`**: Returns raw, text, and HTML representations. Response will include `body`, `body_text`, and `body_html`.",
       "inputs": [

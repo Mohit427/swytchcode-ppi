@@ -1,0 +1,791 @@
+VERSION: 2.0.2
+DEFAULTS:
+  w_base_url: http://localhost:8000
+METHODS:
+  cinebook.health.get:
+    SUMMARY: Check API and database health
+    DESC: Returns ok when the CineBook API is running and can reach PostgreSQL.
+    HTTP:
+      METHOD: GET
+      ENDPOINT: /api/health
+      HEADERS: {}
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    RETURNS:
+      - RETURNTYPE: STRUCT(Health)
+        RETURNVAR: health
+        STATUS: 200
+    ERRORS:
+      - TYPE: STRUCT(Error)
+        STATUS: 503
+        WHEN: The database cannot be reached (code DB_UNAVAILABLE)
+    CANONICAL_ID: cinebook.health.get
+  cinebook.auth.login:
+    SUMMARY: Log in and get a token
+    DESC: |-
+      Checks an email and password and returns a JWT. Send it to the other
+      operations as the header "Authorization: Bearer <token>". It expires
+      after 30 minutes.
+    HTTP:
+      METHOD: POST
+      ENDPOINT: /api/auth/login
+      HEADERS:
+        Content-Type: application/json
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+      BODY:
+        TYPE: STRUCT(LoginRequest)
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    INPUTS:
+      - body:
+          TYPE: STRUCT(LoginRequest)
+          REQUIRED: true
+          LOCATION: body
+          CONTENT_TYPE: application/json
+    RETURNS:
+      - RETURNTYPE: STRUCT(LoginResponse)
+        RETURNVAR: login
+        STATUS: 200
+    ERRORS:
+      - TYPE: STRUCT(Error)
+        STATUS: 401
+        WHEN: Wrong email or password (code INVALID_CREDENTIALS)
+      - TYPE: STRUCT(Error)
+        STATUS: 422
+        WHEN: The email is not valid (code VALIDATION_ERROR)
+    CANONICAL_ID: cinebook.auth.login
+  cinebook.auth.me:
+    SUMMARY: Get the logged-in customer
+    DESC: Returns the customer that the bearer token belongs to.
+    HTTP:
+      METHOD: GET
+      ENDPOINT: /api/auth/me
+      HEADERS: {}
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    RETURNS:
+      - RETURNTYPE: STRUCT(User)
+        RETURNVAR: user
+        STATUS: 200
+    ERRORS:
+      - TYPE: STRUCT(Error)
+        STATUS: 401
+        WHEN: Missing, invalid or expired token (code UNAUTHORIZED)
+    CANONICAL_ID: cinebook.auth.me
+  cinebook.movies.list:
+    SUMMARY: Search movies
+    DESC: Lists movies by title, with optional filters. Each movie lists all of its genres.
+    HTTP:
+      METHOD: GET
+      ENDPOINT: /api/movies
+      HEADERS: {}
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    INPUTS:
+      - search:
+          TYPE: STRING
+          REQUIRED: false
+          LOCATION: query
+          comment: Part of the title, case-insensitive.
+      - genre:
+          TYPE: STRING
+          REQUIRED: false
+          LOCATION: query
+          comment: Genre name, for example Action or Drama.
+      - language:
+          TYPE: STRING
+          REQUIRED: false
+          LOCATION: query
+      - certificate:
+          TYPE: STRING
+          REQUIRED: false
+          LOCATION: query
+          ENUM:
+            - U
+            - UA
+            - A
+      - min_rating:
+          TYPE: FLOAT
+          REQUIRED: false
+          LOCATION: query
+          comment: From 0 to 10.
+      - limit:
+          TYPE: INT
+          REQUIRED: false
+          LOCATION: query
+          DEFAULT: 20
+          comment: From 1 to 100.
+      - offset:
+          TYPE: INT
+          REQUIRED: false
+          LOCATION: query
+          DEFAULT: 0
+    RETURNS:
+      - RETURNTYPE: STRUCT(MovieList)
+        RETURNVAR: movies
+        STATUS: 200
+    ERRORS:
+      - TYPE: STRUCT(Error)
+        STATUS: 422
+        WHEN: A filter is out of range (code VALIDATION_ERROR)
+    CANONICAL_ID: cinebook.movies.list
+  cinebook.movies.get:
+    SUMMARY: Get one movie
+    DESC: Returns one movie with its genres.
+    HTTP:
+      METHOD: GET
+      ENDPOINT: /api/movies/{movie_id}
+      HEADERS: {}
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    INPUTS:
+      - movie_id:
+          TYPE: INT
+          REQUIRED: true
+          LOCATION: path
+    RETURNS:
+      - RETURNTYPE: STRUCT(Movie)
+        RETURNVAR: movie
+        STATUS: 200
+    ERRORS:
+      - TYPE: STRUCT(Error)
+        STATUS: 404
+        WHEN: No movie has this ID (code NOT_FOUND)
+    CANONICAL_ID: cinebook.movies.get
+  cinebook.shows.list:
+    SUMMARY: List upcoming shows
+    DESC: Lists shows that have not started yet, soonest first, with the seats left in each.
+    HTTP:
+      METHOD: GET
+      ENDPOINT: /api/shows
+      HEADERS: {}
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    INPUTS:
+      - movie_id:
+          TYPE: INT
+          REQUIRED: false
+          LOCATION: query
+      - date:
+          TYPE: STRING
+          REQUIRED: false
+          LOCATION: query
+          FORMAT: date
+          comment: Show date as YYYY-MM-DD.
+      - city:
+          TYPE: STRING
+          REQUIRED: false
+          LOCATION: query
+          comment: Theatre city, for example Chennai or Bengaluru.
+      - limit:
+          TYPE: INT
+          REQUIRED: false
+          LOCATION: query
+          DEFAULT: 20
+      - offset:
+          TYPE: INT
+          REQUIRED: false
+          LOCATION: query
+          DEFAULT: 0
+    RETURNS:
+      - RETURNTYPE: STRUCT(ShowList)
+        RETURNVAR: shows
+        STATUS: 200
+    CANONICAL_ID: cinebook.shows.list
+  cinebook.shows.seats:
+    SUMMARY: Get the seat map for a show
+    DESC: |-
+      Lists every seat in the show's screen with its category, price and
+      status (available or taken). Use the seat_id values to book.
+    HTTP:
+      METHOD: GET
+      ENDPOINT: /api/shows/{show_id}/seats
+      HEADERS: {}
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    INPUTS:
+      - show_id:
+          TYPE: INT
+          REQUIRED: true
+          LOCATION: path
+    RETURNS:
+      - RETURNTYPE: STRUCT(SeatMap)
+        RETURNVAR: seat_map
+        STATUS: 200
+    ERRORS:
+      - TYPE: STRUCT(Error)
+        STATUS: 404
+        WHEN: No show has this ID (code NOT_FOUND)
+    CANONICAL_ID: cinebook.shows.seats
+  cinebook.bookings.create:
+    SUMMARY: Book seats for a show
+    DESC: |-
+      Books 1 to 6 seats and records the payment in one database transaction.
+      The seats are locked while booking, so two customers cannot book the
+      same seat. Needs "Authorization: Bearer <token>". Not safe to retry
+      blindly: check the customer's bookings before trying again.
+    HTTP:
+      METHOD: POST
+      ENDPOINT: /api/bookings
+      HEADERS:
+        Content-Type: application/json
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+      BODY:
+        TYPE: STRUCT(BookingRequest)
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    INPUTS:
+      - body:
+          TYPE: STRUCT(BookingRequest)
+          REQUIRED: true
+          LOCATION: body
+          CONTENT_TYPE: application/json
+    RETURNS:
+      - RETURNTYPE: STRUCT(Booking)
+        RETURNVAR: booking
+        STATUS: 201
+    ERRORS:
+      - TYPE: STRUCT(Error)
+        STATUS: 400
+        WHEN: Show already started, seats not in this show's screen, more than 6 seats, or a seat listed twice (codes SHOW_STARTED, INVALID_SEATS, TOO_MANY_SEATS, DUPLICATE_SEATS)
+      - TYPE: STRUCT(Error)
+        STATUS: 401
+        WHEN: Missing, invalid or expired token (code UNAUTHORIZED)
+      - TYPE: STRUCT(Error)
+        STATUS: 404
+        WHEN: No show has this ID (code NOT_FOUND)
+      - TYPE: STRUCT(Error)
+        STATUS: 409
+        WHEN: A seat is already booked (code SEAT_TAKEN)
+      - TYPE: STRUCT(Error)
+        STATUS: 422
+        WHEN: Missing field or unknown payment method (code VALIDATION_ERROR)
+    CANONICAL_ID: cinebook.bookings.create
+  cinebook.bookings.list:
+    SUMMARY: List my bookings
+    DESC: |-
+      Lists the logged-in customer's bookings, newest first. Needs
+      "Authorization: Bearer <token>".
+    HTTP:
+      METHOD: GET
+      ENDPOINT: /api/bookings/me
+      HEADERS: {}
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    INPUTS:
+      - limit:
+          TYPE: INT
+          REQUIRED: false
+          LOCATION: query
+          DEFAULT: 20
+      - offset:
+          TYPE: INT
+          REQUIRED: false
+          LOCATION: query
+          DEFAULT: 0
+    RETURNS:
+      - RETURNTYPE: STRUCT(BookingList)
+        RETURNVAR: bookings
+        STATUS: 200
+    ERRORS:
+      - TYPE: STRUCT(Error)
+        STATUS: 401
+        WHEN: Missing, invalid or expired token (code UNAUTHORIZED)
+    CANONICAL_ID: cinebook.bookings.list
+  cinebook.bookings.get:
+    SUMMARY: Get one booking
+    DESC: Returns a booking with its show, tickets and payment. Only its owner or an admin can see it.
+    HTTP:
+      METHOD: GET
+      ENDPOINT: /api/bookings/{booking_id}
+      HEADERS: {}
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    INPUTS:
+      - booking_id:
+          TYPE: INT
+          REQUIRED: true
+          LOCATION: path
+    RETURNS:
+      - RETURNTYPE: STRUCT(Booking)
+        RETURNVAR: booking
+        STATUS: 200
+    ERRORS:
+      - TYPE: STRUCT(Error)
+        STATUS: 401
+        WHEN: Missing, invalid or expired token (code UNAUTHORIZED)
+      - TYPE: STRUCT(Error)
+        STATUS: 403
+        WHEN: The booking belongs to another customer (code FORBIDDEN)
+      - TYPE: STRUCT(Error)
+        STATUS: 404
+        WHEN: No booking has this ID (code NOT_FOUND)
+    CANONICAL_ID: cinebook.bookings.get
+  cinebook.bookings.cancel:
+    SUMMARY: Cancel a booking
+    DESC: |-
+      Cancels a confirmed booking and refunds it in full. Allowed only by its
+      owner and only up to 2 hours before the show. Needs "Authorization: Bearer <token>".
+    HTTP:
+      METHOD: POST
+      ENDPOINT: /api/bookings/{booking_id}/cancel
+      HEADERS: {}
+      CONTENT_TYPE: application/json
+      ACCEPT: application/json
+    EXECUTION:
+      KIND: http
+      MODE: sync
+    INPUTS:
+      - booking_id:
+          TYPE: INT
+          REQUIRED: true
+          LOCATION: path
+    RETURNS:
+      - RETURNTYPE: STRUCT(CancelResult)
+        RETURNVAR: cancellation
+        STATUS: 200
+    ERRORS:
+      - TYPE: STRUCT(Error)
+        STATUS: 400
+        WHEN: The booking is already cancelled (code NOT_CONFIRMED)
+      - TYPE: STRUCT(Error)
+        STATUS: 401
+        WHEN: Missing, invalid or expired token (code UNAUTHORIZED)
+      - TYPE: STRUCT(Error)
+        STATUS: 403
+        WHEN: The booking belongs to another customer (code FORBIDDEN)
+      - TYPE: STRUCT(Error)
+        STATUS: 404
+        WHEN: No booking has this ID (code NOT_FOUND)
+      - TYPE: STRUCT(Error)
+        STATUS: 409
+        WHEN: The show starts in less than 2 hours (code TOO_LATE)
+    CANONICAL_ID: cinebook.bookings.cancel
+STRUCTS:
+  Error:
+    - name: detail
+      TYPE: STRING
+      REQUIRED: true
+      comment: A message to show the user.
+    - name: code
+      TYPE: STRING
+      REQUIRED: true
+      comment: A stable code for programs, such as SEAT_TAKEN.
+  Health:
+    - name: status
+      TYPE: STRING
+      REQUIRED: true
+    - name: database
+      TYPE: STRING
+      REQUIRED: true
+  LoginRequest:
+    - name: email
+      TYPE: STRING
+      REQUIRED: true
+      FORMAT: email
+    - name: password
+      TYPE: STRING
+      REQUIRED: true
+  LoginResponse:
+    - name: user
+      TYPE: STRUCT(User)
+      REQUIRED: true
+    - name: token
+      TYPE: STRING
+      REQUIRED: true
+      comment: JWT for the Authorization header. Treat it as a secret.
+    - name: token_type
+      TYPE: STRING
+      REQUIRED: true
+  User:
+    - name: customer_id
+      TYPE: INT
+      REQUIRED: true
+    - name: name
+      TYPE: STRING
+      REQUIRED: true
+    - name: email
+      TYPE: STRING
+      REQUIRED: true
+    - name: phone
+      TYPE: STRING
+      REQUIRED: true
+    - name: role
+      TYPE: STRING
+      REQUIRED: true
+      ENUM:
+        - CUSTOMER
+        - ADMIN
+    - name: created_at
+      TYPE: TIMESTAMP
+      REQUIRED: true
+      FORMAT: date-time
+  Movie:
+    - name: movie_id
+      TYPE: INT
+      REQUIRED: true
+    - name: title
+      TYPE: STRING
+      REQUIRED: true
+    - name: description
+      TYPE: STRING
+      REQUIRED: false
+    - name: duration_min
+      TYPE: INT
+      REQUIRED: true
+    - name: language
+      TYPE: STRING
+      REQUIRED: true
+    - name: certificate
+      TYPE: STRING
+      REQUIRED: true
+      ENUM:
+        - U
+        - UA
+        - A
+    - name: release_date
+      TYPE: DATE
+      REQUIRED: true
+      FORMAT: date
+    - name: rating
+      TYPE: FLOAT
+      REQUIRED: false
+    - name: poster_url
+      TYPE: STRING
+      REQUIRED: false
+    - name: genres
+      TYPE: "[]STRING"
+      REQUIRED: true
+  MovieList:
+    - name: movies
+      TYPE: "[]STRUCT(Movie)"
+      REQUIRED: true
+    - name: total
+      TYPE: INT
+      REQUIRED: true
+      comment: Number of matching movies across all pages.
+    - name: limit
+      TYPE: INT
+      REQUIRED: true
+    - name: offset
+      TYPE: INT
+      REQUIRED: true
+  MovieBasic:
+    - name: movie_id
+      TYPE: INT
+      REQUIRED: true
+    - name: title
+      TYPE: STRING
+      REQUIRED: true
+    - name: duration_min
+      TYPE: INT
+      REQUIRED: true
+    - name: poster_url
+      TYPE: STRING
+      REQUIRED: false
+  Theatre:
+    - name: theatre_id
+      TYPE: INT
+      REQUIRED: true
+    - name: name
+      TYPE: STRING
+      REQUIRED: true
+    - name: city
+      TYPE: STRING
+      REQUIRED: true
+  Screen:
+    - name: screen_id
+      TYPE: INT
+      REQUIRED: true
+    - name: screen_name
+      TYPE: STRING
+      REQUIRED: true
+    - name: screen_type
+      TYPE: STRING
+      REQUIRED: true
+      ENUM:
+        - 2D
+        - 3D
+        - IMAX
+  Show:
+    - name: show_id
+      TYPE: INT
+      REQUIRED: true
+    - name: show_date
+      TYPE: DATE
+      REQUIRED: true
+      FORMAT: date
+    - name: start_time
+      TYPE: STRING
+      REQUIRED: true
+      comment: 24-hour HH:MM.
+    - name: end_time
+      TYPE: STRING
+      REQUIRED: true
+      comment: 24-hour HH:MM.
+    - name: movie
+      TYPE: STRUCT(MovieBasic)
+      REQUIRED: true
+    - name: theatre
+      TYPE: STRUCT(Theatre)
+      REQUIRED: true
+    - name: screen
+      TYPE: STRUCT(Screen)
+      REQUIRED: true
+    - name: seats_left
+      TYPE: INT
+      REQUIRED: true
+  ShowList:
+    - name: shows
+      TYPE: "[]STRUCT(Show)"
+      REQUIRED: true
+    - name: total
+      TYPE: INT
+      REQUIRED: true
+    - name: limit
+      TYPE: INT
+      REQUIRED: true
+    - name: offset
+      TYPE: INT
+      REQUIRED: true
+  Seat:
+    - name: seat_id
+      TYPE: INT
+      REQUIRED: true
+      comment: Use this ID when booking.
+    - name: label
+      TYPE: STRING
+      REQUIRED: true
+      comment: Row and number, for example C-7.
+    - name: row_label
+      TYPE: STRING
+      REQUIRED: true
+    - name: seat_number
+      TYPE: INT
+      REQUIRED: true
+    - name: seat_category
+      TYPE: STRING
+      REQUIRED: true
+      ENUM:
+        - REGULAR
+        - PREMIUM
+        - RECLINER
+    - name: price
+      TYPE: INT
+      REQUIRED: true
+      comment: Whole rupees.
+    - name: status
+      TYPE: STRING
+      REQUIRED: true
+      ENUM:
+        - available
+        - taken
+  SeatSummary:
+    - name: total
+      TYPE: INT
+      REQUIRED: true
+    - name: available
+      TYPE: INT
+      REQUIRED: true
+    - name: taken
+      TYPE: INT
+      REQUIRED: true
+  SeatMap:
+    - name: show
+      TYPE: STRUCT(Show)
+      REQUIRED: true
+    - name: seats
+      TYPE: "[]STRUCT(Seat)"
+      REQUIRED: true
+    - name: summary
+      TYPE: STRUCT(SeatSummary)
+      REQUIRED: true
+  BookingRequest:
+    - name: show_id
+      TYPE: INT
+      REQUIRED: true
+    - name: seat_ids
+      TYPE: "[]INT"
+      REQUIRED: true
+      comment: 1 to 6 seat IDs from the show's seat map, with no repeats.
+    - name: payment_method
+      TYPE: STRING
+      REQUIRED: true
+      ENUM:
+        - UPI
+        - CARD
+        - CASH
+  Ticket:
+    - name: ticket_id
+      TYPE: INT
+      REQUIRED: true
+    - name: seat_id
+      TYPE: INT
+      REQUIRED: true
+    - name: seat
+      TYPE: STRING
+      REQUIRED: true
+      comment: Row and number, for example C-7.
+    - name: seat_category
+      TYPE: STRING
+      REQUIRED: true
+    - name: price
+      TYPE: INT
+      REQUIRED: true
+    - name: status
+      TYPE: STRING
+      REQUIRED: true
+      ENUM:
+        - ACTIVE
+        - CANCELLED
+  Payment:
+    - name: payment_id
+      TYPE: INT
+      REQUIRED: true
+    - name: amount
+      TYPE: INT
+      REQUIRED: true
+    - name: method
+      TYPE: STRING
+      REQUIRED: true
+    - name: status
+      TYPE: STRING
+      REQUIRED: true
+      ENUM:
+        - SUCCESS
+        - FAILED
+        - REFUNDED
+    - name: paid_at
+      TYPE: TIMESTAMP
+      REQUIRED: false
+      FORMAT: date-time
+  Booking:
+    - name: booking_id
+      TYPE: INT
+      REQUIRED: true
+    - name: customer_id
+      TYPE: INT
+      REQUIRED: true
+    - name: booking_time
+      TYPE: TIMESTAMP
+      REQUIRED: true
+      FORMAT: date-time
+    - name: total_amount
+      TYPE: INT
+      REQUIRED: true
+    - name: status
+      TYPE: STRING
+      REQUIRED: true
+      ENUM:
+        - PENDING
+        - CONFIRMED
+        - CANCELLED
+    - name: can_cancel
+      TYPE: BOOL
+      REQUIRED: true
+      comment: True while the booking is confirmed and the show is more than 2 hours away.
+    - name: show
+      TYPE: STRUCT(Show)
+      REQUIRED: true
+    - name: tickets
+      TYPE: "[]STRUCT(Ticket)"
+      REQUIRED: true
+    - name: payment
+      TYPE: STRUCT(Payment)
+      REQUIRED: false
+  BookingSummary:
+    - name: booking_id
+      TYPE: INT
+      REQUIRED: true
+    - name: booking_time
+      TYPE: TIMESTAMP
+      REQUIRED: true
+      FORMAT: date-time
+    - name: total_amount
+      TYPE: INT
+      REQUIRED: true
+    - name: status
+      TYPE: STRING
+      REQUIRED: true
+    - name: show_id
+      TYPE: INT
+      REQUIRED: true
+    - name: show_date
+      TYPE: DATE
+      REQUIRED: true
+      FORMAT: date
+    - name: start_time
+      TYPE: STRING
+      REQUIRED: true
+    - name: movie
+      TYPE: STRING
+      REQUIRED: true
+    - name: theatre
+      TYPE: STRING
+      REQUIRED: true
+    - name: screen
+      TYPE: STRING
+      REQUIRED: true
+    - name: seats
+      TYPE: "[]STRING"
+      REQUIRED: true
+    - name: can_cancel
+      TYPE: BOOL
+      REQUIRED: true
+  BookingList:
+    - name: bookings
+      TYPE: "[]STRUCT(BookingSummary)"
+      REQUIRED: true
+    - name: total
+      TYPE: INT
+      REQUIRED: true
+    - name: limit
+      TYPE: INT
+      REQUIRED: true
+    - name: offset
+      TYPE: INT
+      REQUIRED: true
+  CancelResult:
+    - name: booking_id
+      TYPE: INT
+      REQUIRED: true
+    - name: status
+      TYPE: STRING
+      REQUIRED: true
+    - name: tickets_cancelled
+      TYPE: INT
+      REQUIRED: true
+    - name: refunded_amount
+      TYPE: INT
+      REQUIRED: true
+    - name: payment_status
+      TYPE: STRING
+      REQUIRED: true
